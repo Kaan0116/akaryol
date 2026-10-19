@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akaryol — Yolun ve yakıtın tek haritada</title>
+<meta name="description" content="Akaryol; Türkiye'deki akaryakıt ve şarj istasyonlarını EPDK fiyatlarıyla haritada gösterir, aracının menziline göre yol üstü yakıt duraklarını planlar ve seni sesli navigasyonla götürür.">
+<meta name="theme-color" content="#050505">
+<meta property="og:title" content="Akaryol — Yolun ve yakıtın tek haritada">
+<meta property="og:description" content="81 ilde akaryakıt ve şarj istasyonları, EPDK fiyatları, menzile göre yakıt planı ve navigasyon.">
+<meta property="og:image" content="assets/akaryol-logo.png">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050505;
+    --bg-2: #0d0d0d;
+    --card: #141414;
+    --line: #262626;
+    --text: #f5f5f4;
+    --muted: #a8a29e;
+    --subtle: #78716c;
+    --amber: #feb80a;
+    --amber-2: #ffcf4d;
+    --amber-soft: rgba(254, 184, 10, .12);
+    --ev: #8b5cf6;
+    --radius: 20px;
+    --max: 1160px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Manrope", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+  h1, h2, h3, summary { font-family: "Outfit", system-ui, sans-serif; line-height: 1.1; margin: 0; letter-spacing: -.02em; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  .amber { color: var(--amber); }
+
+  /* NAV */
+  header.nav {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(5, 5, 5, .78);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand .mark { height: 38px; width: auto; }
+  .brand .word { height: 20px; width: auto; }
+  .nav nav { display: flex; gap: 28px; align-items: center; }
+  .nav nav a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 15px; transition: color .2s; }
+  .nav nav a:hover { color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 24px; border-radius: 999px;
+    font-weight: 700; font-size: 15px; text-decoration: none;
+    border: 1px solid transparent; transition: transform .15s, background .2s, border-color .2s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--amber); color: #111; }
+  .btn-primary:hover { background: var(--amber-2); }
+  .btn-ghost { border-color: var(--line); color: var(--text); }
+  .btn-ghost:hover { border-color: #444; }
+  .nav .btn { padding: 10px 18px; font-size: 14px; }
+  .nav nav a.btn-primary { color: #111; }
+
+  /* HERO */
+  .hero { position: relative; padding: 72px 0 96px; }
+  .hero::before {
+    content: ""; position: absolute; inset: -200px 0 auto 0; height: 760px; pointer-events: none;
+    background: radial-gradient(600px 380px at 75% 40%, rgba(254,184,10,.16), transparent 70%);
+  }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; position: relative; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: var(--amber-soft); color: var(--amber);
+    font-weight: 700; font-size: 13px; letter-spacing: .02em;
+    border: 1px solid rgba(254,184,10,.25);
+  }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  .hero h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 800; margin: 22px 0 20px; }
+  .hero p.lead { font-size: 19px; color: var(--muted); max-width: 560px; margin: 0 0 32px; }
+  .hero .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero .note { margin-top: 18px; font-size: 13px; color: var(--subtle); }
+
+  /* PHONE */
+  .phone {
+    width: 320px; max-width: 100%; margin: 0 auto; aspect-ratio: 9 / 18.5;
+    border-radius: 46px; padding: 12px; background: #1a1a1a;
+    box-shadow: 0 0 0 1px #2c2c2c, 0 40px 80px -20px rgba(0,0,0,.8), 0 0 120px -30px rgba(254,184,10,.35);
+    position: relative;
+  }
+  .screen { width: 100%; height: 100%; border-radius: 36px; overflow: hidden; background: #111; position: relative; }
+  .screen svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .search {
+    position: absolute; top: 34px; left: 14px; right: 14px;
+    background: #1f1f1f; border: 1px solid #2f2f2f; border-radius: 14px;
+    padding: 11px 14px; font-size: 13px; color: #d6d3d1; display: flex; gap: 8px; align-items: center;
+  }
+  .search b { width: 9px; height: 9px; border-radius: 50%; background: var(--amber); flex: none; }
+  .sheet {
+    position: absolute; left: 10px; right: 10px; bottom: 10px;
+    background: #181818; border: 1px solid #2a2a2a; border-radius: 22px; padding: 14px 16px;
+  }
+  .sheet .t { font-family: "Outfit", system-ui, sans-serif; font-weight: 700; font-size: 15px; }
+  .sheet .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sheet .row { display: flex; gap: 8px; margin-top: 12px; }
+  .sheet .chip { flex: 1; background: #222; border-radius: 12px; padding: 8px 10px; }
+  .sheet .chip small { display: block; color: var(--subtle); font-size: 10.5px; }
+  .sheet .chip strong { font-size: 13.5px; }
+  .sheet .go { margin-top: 12px; background: var(--amber); color: #111; text-align: center; border-radius: 12px; padding: 10px; font-weight: 800; font-size: 13px; }
+  .mock-label { text-align: center; color: var(--subtle); font-size: 12px; margin-top: 16px; }
+
+  /* STATS */
+  .stats { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-2); }
+  .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stat { padding: 34px 20px; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: 0; }
+  .stat strong { display: block; font-family: "Outfit", system-ui, sans-serif; font-size: 40px; font-weight: 800; color: var(--amber); line-height: 1; }
+  .stat span { display: block; margin-top: 10px; color: var(--muted); font-size: 14.5px; }
+
+  /* SECTIONS */
+  section.block { padding: 110px 0; }
+  .eyebrow { color: var(--amber); font-weight: 800; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; }
+  .head { max-width: 680px; margin-bottom: 56px; }
+  .head h2 { font-size: clamp(32px, 4.2vw, 48px); font-weight: 800; margin: 14px 0 16px; }
+  .head p { color: var(--muted); font-size: 18px; margin: 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px; transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: rgba(254,184,10,.4); transform: translateY(-2px); }
+  .ico {
+    width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+    background: var(--amber-soft); color: var(--amber); margin-bottom: 20px;
+  }
+  .ico svg { width: 24px; height: 24px; }
+  .card h3 { font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .card.wide { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+
+  /* RANGE VISUAL */
+  .range { background: #0f0f0f; border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .range .lbl { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--subtle); margin-bottom: 10px; }
+  .bar { height: 14px; border-radius: 999px; background: #1f1f1f; position: relative; overflow: hidden; }
+  .bar .reserve { position: absolute; left: 0; top: 0; bottom: 0; width: 10%; background: repeating-linear-gradient(45deg, #3a1a1a, #3a1a1a 5px, #2a1212 5px, #2a1212 10px); }
+  .bar .span { position: absolute; left: 58%; width: 18%; top: 0; bottom: 0; background: var(--amber); border-radius: 999px; }
+  .range .val { margin-top: 14px; font-family: "Outfit", system-ui, sans-serif; font-size: 26px; font-weight: 800; }
+  .range .val small { font-family: "Manrope"; font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+
+  /* STEPS */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+  .step { position: relative; padding: 30px 28px 28px; border-radius: var(--radius); background: linear-gradient(180deg, #151515, #0e0e0e); border: 1px solid var(--line); }
+  .step::before {
+    counter-increment: s; content: counter(s, decimal-leading-zero);
+    font-family: "Outfit", system-ui, sans-serif; font-weight: 800; font-size: 46px; color: transparent;
+    -webkit-text-stroke: 1.5px var(--amber); display: block; margin-bottom: 14px; line-height: 1;
+  }
+  .step h3 { font-size: 20px; margin-bottom: 8px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+  /* SPLIT */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+  .checks { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; }
+  .checks li { display: flex; gap: 14px; align-items: flex-start; color: #d6d3d1; }
+  .checks li::before {
+    content: ""; flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%;
+    background: var(--amber-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23feb80a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 13px no-repeat;
+  }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 28px; }
+  .price-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .price-row:last-of-type { border-bottom: 0; }
+  .price-row .n { font-weight: 700; }
+  .price-row .n small { display: block; font-weight: 500; color: var(--subtle); font-size: 12.5px; }
+  .price-row .p { font-family: "Outfit", system-ui, sans-serif; font-weight: 700; font-size: 20px; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
+  .tag.up { background: rgba(239,68,68,.15); color: #f87171; }
+  .tag.ok { background: var(--amber-soft); color: var(--amber); }
+  .alert { margin-top: 18px; padding: 14px 16px; border-radius: 14px; background: rgba(254,184,10,.08); border: 1px solid rgba(254,184,10,.25); font-size: 14px; color: #e7e5e4; }
+  .alert b { color: var(--amber); }
+  .panel .foot { margin-top: 14px; font-size: 12px; color: var(--subtle); }
+
+  .ev-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--ev); margin-right: 8px; }
+
+  /* FAQ */
+  .faq { max-width: 820px; }
+  details { border-bottom: 1px solid var(--line); padding: 22px 0; }
+  summary { cursor: pointer; list-style: none; font-family: "Outfit", system-ui, sans-serif; font-weight: 600; font-size: 19px; display: flex; justify-content: space-between; gap: 20px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--amber); font-size: 26px; line-height: 1; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--muted); margin: 14px 0 0; }
+
+  /* CTA */
+  .cta {
+    margin: 0 auto; border-radius: 32px; padding: 64px 48px; text-align: center; position: relative; overflow: hidden;
+    background: radial-gradient(500px 260px at 50% 0%, rgba(254,184,10,.22), transparent 70%), #0f0f0f;
+    border: 1px solid #2a2a2a;
+  }
+  .cta img { width: 340px; margin: 0 auto 32px; }
+  .cta p { color: var(--muted); font-size: 18px; max-width: 560px; margin: 0 auto 30px; }
+
+  footer { border-top: 1px solid var(--line); padding: 40px 0 48px; margin-top: 110px; color: var(--subtle); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
+  footer a { text-decoration: none; color: var(--muted); }
+  footer a:hover { color: var(--text); }
+  footer .attr { width: 100%; font-size: 12.5px; margin-top: 8px; }
+
+  /* REVEAL */
+  .rv { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .rv.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+  /* RESPONSIVE */
+  @media (max-width: 960px) {
+    .hero .wrap, .split { grid-template-columns: 1fr; }
+    .hero { padding-top: 48px; }
+    .grid, .steps { grid-template-columns: 1fr 1fr; }
+    .card.wide { grid-column: span 2; }
+    .stats .wrap { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(3) { border-left: 0; }
+    .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .nav nav a:not(.btn) { display: none; }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px; }
+    .grid, .steps { grid-template-columns: 1fr; }
+    .card.wide { grid-column: auto; grid-template-columns: 1fr; }
+    section.block { padding: 80px 0; }
+    .stat { padding: 24px 14px; }
+    .stat strong { font-size: 32px; }
+    .cta { padding: 44px 20px; }
+    .cta img { width: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <img class="mark" src="assets/akaryol-isaret.png" alt="">
+      <img class="word" src="assets/akaryol-yazi.png" alt="Akaryol">
+    </a>
+    <nav>
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#nasil">Nasıl çalışır</a>
+      <a href="#fiyat">Fiyatlar</a>
+      <a href="#sss">SSS</a>
+      <a class="btn btn-primary" href="#indir">Uygulamayı al</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="rv">
+      <span class="pill"><i></i> Türkiye'nin 81 ili · EPDK verisiyle</span>
+      <h1>Yolun da yakıtın da <span class="amber">tek haritada.</span></h1>
+      <p class="lead">Akaryol, aracının menzilini hesaba katarak yolculuğundaki en uygun yakıt duraklarını planlar, istasyonları EPDK fiyatlarıyla gösterir ve seni sesli navigasyonla götürür.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#indir">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.2c-.3.3-.4.7-.4 1.2v17.2c0 .5.1.9.4 1.2l9.6-9.8-9.6-9.8zm10.7 10.9 2.6 2.6-11 6.3 8.4-8.9zm3.8-3.8 2.9 1.7c.8.5.8 1.6 0 2.1l-2.9 1.7-2.8-2.8 2.8-2.7zM5.9 2l11 6.3-2.6 2.6L5.9 2z"/></svg>
+          Yakında Google Play'de
+        </a>
+        <a class="btn btn-ghost" href="#ozellikler">Neler yapabilir?</a>
+      </div>
+      <div class="note">Ücretsiz. Sıralama ve öneriler hiçbir koşulda ücretli etkiye açık değildir.</div>
+    </div>
+
+    <div class="rv">
+      <div class="phone" aria-hidden="true">
+        <div class="screen">
+          <svg viewBox="0 0 296 600" preserveAspectRatio="xMidYMid slice">
+            <rect width="296" height="600" fill="#121212"/>
+            <g stroke="#1e1e1e" stroke-width="10" fill="none">
+              <path d="M-20 140 L320 90"/><path d="M-20 300 L320 340"/><path d="M60 -20 L110 620"/><path d="M230 -20 L200 620"/><path d="M-20 470 L320 430"/>
+            </g>
+            <g stroke="#191919" stroke-width="4" fill="none">
+              <path d="M-20 210 L320 200"/><path d="M150 -20 L170 620"/><path d="M-20 390 L320 380"/><path d="M20 -20 L0 620"/>
+            </g>
+            <path d="M70 560 C 90 470, 210 470, 200 380 S 80 300, 120 210 S 240 160, 230 90" stroke="#feb80a" stroke-opacity=".25" stroke-width="16" fill="none" stroke-linecap="round"/>
+            <path d="M70 560 C 90 470, 210 470, 200 380 S 80 300, 120 210 S 240 160, 230 90" stroke="#feb80a" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <circle cx="70" cy="560" r="9" fill="#1a73e8" stroke="#fff" stroke-width="3"/>
+            <g transform="translate(200 380)">
+              <circle r="13" fill="#050505" stroke="#feb80a" stroke-width="3"/><circle r="4.5" fill="#feb80a"/>
+              <rect x="-96" y="-15" width="80" height="30" rx="15" fill="#feb80a"/>
+              <text x="-56" y="5" text-anchor="middle" font-family="Outfit, sans-serif" font-weight="800" font-size="13" fill="#111">1. durak</text>
+            </g>
+            <g transform="translate(120 210)">
+              <circle r="13" fill="#050505" stroke="#feb80a" stroke-width="3"/><circle r="4.5" fill="#feb80a"/>
+              <rect x="18" y="-15" width="80" height="30" rx="15" fill="#feb80a"/>
+              <text x="58" y="5" text-anchor="middle" font-family="Outfit, sans-serif" font-weight="800" font-size="13" fill="#111">2. durak</text>
+            </g>
+            <g fill="#3f3f46"><circle cx="40" cy="250" r="5"/><circle cx="260" cy="300" r="5"/><circle cx="250" cy="470" r="5"/><circle cx="30" cy="420" r="5"/><circle cx="180" cy="140" r="5"/></g>
+            <g fill="#8b5cf6"><rect x="255" y="235" width="10" height="10" rx="3"/><rect x="25" y="330" width="10" height="10" rx="3"/></g>
+            <path d="M230 90 m-11 0 a11 11 0 1 1 22 0 c0 9 -11 20 -11 20 s-11 -11 -11 -20z" fill="#ef4444"/>
+          </svg>
+          <div class="search"><b></b> Ankara → İstanbul</div>
+          <div class="sheet">
+            <div class="t">Yakıt planı hazır</div>
+            <div class="s">2 durak · rezerv tabanının altına inmez</div>
+            <div class="row">
+              <div class="chip"><small>Varışta menzil</small><strong>120–150 km</strong></div>
+              <div class="chip"><small>Yol maliyeti</small><strong>aralıkla</strong></div>
+            </div>
+            <div class="go">Navigasyonu başlat</div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-label">Örnek ekran görünümü</div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="wrap">
+    <div class="stat"><strong>81</strong><span>il, ülke genelinde kapsam</span></div>
+    <div class="stat"><strong>12.600+</strong><span>EPDK kayıtlı akaryakıt istasyonu</span></div>
+    <div class="stat"><strong>13.000+</strong><span>halka açık elektrikli şarj istasyonu</span></div>
+    <div class="stat"><strong>%10</strong><span>hiçbir planın altına inmediği rezerv tabanı</span></div>
+  </div>
+</section>
+
+<section class="block" id="ozellikler">
+  <div class="wrap">
+    <div class="head rv">
+      <div class="eyebrow">Özellikler</div>
+      <h2>Bir yakıt uygulamasından <span class="amber">fazlası.</span></h2>
+      <p>Harita, fiyat, plan ve navigasyon tek uygulamada. Yolculuğa çıkmadan önce de yoldayken de.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card wide rv">
+        <div>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+          <h3>Menzile göre yakıt planı</h3>
+          <p>Gideceğin yeri yaz; Akaryol aracının tüketimine ve depodaki yakıta göre rotadaki en uygun durakları ve ne kadar alman gerektiğini hesaplar. Sapma süresini, fiyatı ve tercih ettiğin markayı birlikte tartar.</p>
+        </div>
+        <div class="range">
+          <div class="lbl"><span>Rezerv</span><span>Kalan menzil</span><span>Dolu depo</span></div>
+          <div class="bar"><div class="reserve"></div><div class="span"></div></div>
+          <div class="val">410–480 km <small>tek sayı değil, gerçekçi aralık</small></div>
+        </div>
+      </div>
+
+      <div class="card rv">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
+        <h3>İstasyon haritası</h3>
+        <p>Akaryakıt ve LPG istasyonları fiyat rozetleriyle haritada. WC, market, restoran, oyun parkı, mescit ve 7/24 açık filtreleri.</p>
+      </div>
+
+      <div class="card rv">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div>
+        <h3>Sesli navigasyon</h3>
+        <p>Dönüş dönüş Türkçe talimatlar, trafik yoğunluğuyla renklenen rota, hız sınırı, radar ve kaza uyarıları. Uygulamadan çıksan da navigasyon sürer.</p>
+      </div>
+
+      <div class="card rv">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        <h3>Zam ve indirim uyarısı</h3>
+        <p>Yürürlüğe girmeden önce EPDK'ya bildirilen değişiklikleri yakalar; "şimdi doldur mu, bekle mi?" sorusuna net cevap verir.</p>
+      </div>
+
+      <div class="card rv">
+        <div class="ico" style="background:rgba(139,92,246,.14);color:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
+        <h3>Elektrikli şarj katmanı</h3>
+        <p>EPDK'daki halka açık şarj istasyonları; AC/DC ve güç filtresi, soket bilgisi ve işletmecinin kendi sitesindeki tarife.</p>
+      </div>
+
+      <div class="card rv">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg></div>
+        <h3>Fiyat geçmişi ve alarm</h3>
+        <p>İstasyonun fiyat geçmişini 30 gün, 3 ay veya 1 yıl olarak gör. Hedef fiyatını koy, o fiyata inince bildirim al.</p>
+      </div>
+
+      <div class="card rv">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="8" rx="2"/><path d="M5 11l2-5h10l2 5"/><circle cx="7.5" cy="15" r="1"/><circle cx="16.5" cy="15" r="1"/></svg></div>
+        <h3>Araç ve harcama takibi</h3>
+        <p>Dolumlarını kaydet; Akaryol gerçek tüketimini öğrenir, km başı maliyetini ve aylık harcamanı çıkarır.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="nasil" style="padding-top:0">
+  <div class="wrap">
+    <div class="head rv">
+      <div class="eyebrow">Nasıl çalışır</div>
+      <h2>Üç adımda <span class="amber">yola çık.</span></h2>
+    </div>
+    <div class="steps">
+      <div class="step rv"><h3>Aracını ekle</h3><p>Yakıt türünü, depo hacmini ve tüketimini gir. Birkaç dolumdan sonra Akaryol gerçek tüketimini kendisi öğrenir.</p></div>
+      <div class="step rv"><h3>Nereye gittiğini yaz</h3><p>Hedefini ara ya da haritadan seç. Akaryol rotayı, alternatifleri ve trafikli varış süresini gösterir.</p></div>
+      <div class="step rv"><h3>Planı onayla, sür</h3><p>Durakları, alınacak litreyi ve maliyet aralığını gör; tek dokunuşla sesli navigasyonu başlat.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="fiyat" style="padding-top:0">
+  <div class="wrap split">
+    <div class="rv">
+      <div class="eyebrow">Şeffaf veri</div>
+      <h2 style="font-size:clamp(32px,4.2vw,48px);font-weight:800;margin:14px 0 16px">Fiyatlar <span class="amber">resmî kaynaktan.</span></h2>
+      <p style="color:var(--muted);font-size:18px;margin:0">Akaryakıt ve LPG fiyatları EPDK'nın yayımladığı verilerden, il ve ilçe bazında günde birkaç kez yenilenir. Bilmediğimiz bir şeyi biliyormuş gibi göstermeyiz.</p>
+      <ul class="checks">
+        <li>Fiyatın hangi il, ilçe ya da yakaya ait olduğu her zaman yazar.</li>
+        <li>İstanbul'da Anadolu ve Avrupa yakası ayrı fiyatlarla gösterilir.</li>
+        <li>Fiyatı bilinmeyen istasyonda tahmin yerine "bilinmiyor" yazar.</li>
+        <li>Kullanıcıların bildirdiği pompa fiyatları ayrı ve işaretli gösterilir, EPDK fiyatına karışmaz.</li>
+        <li>Haberlerden gelen zam beklentisi "kesin değil" etiketiyle gelir.</li>
+      </ul>
+    </div>
+    <div class="panel rv" aria-hidden="true">
+      <div class="price-row"><div class="n">Benzin 95<small>İl geneli fiyatı</small></div><div class="p">— TL</div></div>
+      <div class="price-row"><div class="n">Motorin <span class="tag up">Gece yarısı zam</span><small>İlçe fiyatı</small></div><div class="p">— TL</div></div>
+      <div class="price-row"><div class="n">LPG <span class="tag ok">Dağıtıcı fiyatı</span><small>LPG dağıtıcısına göre</small></div><div class="p">— TL</div></div>
+      <div class="alert"><b>Şimdi doldur:</b> EPDK'ya bildirilen motorin zammı gece yarısı yürürlüğe giriyor.</div>
+      <div class="foot">Temsilî kart. Uygulamada güncel EPDK fiyatları görünür.</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="sss" style="padding-top:0">
+  <div class="wrap">
+    <div class="head rv">
+      <div class="eyebrow">Sıkça sorulanlar</div>
+      <h2>Merak <span class="amber">edilenler.</span></h2>
+    </div>
+    <div class="faq rv">
+      <details>
+        <summary>Akaryol ücretli mi?</summary>
+        <p>Hayır, uygulama ücretsizdir. İstasyon sıralaması ve öneriler hiçbir koşulda ücretli etkiye açılmaz; ileride sponsorlu içerik olursa ayrı ve açıkça işaretli gösterilir.</p>
+      </details>
+      <details>
+        <summary>Fiyatlar nereden geliyor?</summary>
+        <p>Akaryakıt ve LPG fiyatları EPDK'nın yayımladığı resmî verilerden alınır. Fiyatlar marka, il/ilçe ve yakıt türü bazındadır; bu yüzden her istasyonda fiyatın kapsamı (ilçe, il, yaka) açıkça yazılır.</p>
+      </details>
+      <details>
+        <summary>Yakıt planı beni yolda bırakır mı?</summary>
+        <p>Planlayıcı, tüketimi kötümser uçtan hesaplar ve hiçbir planda deponun %10'luk rezerv tabanının altına inmez. Bu tabanı yükseltebilirsin ama düşüremezsin. Menzil de tek bir sayı değil, gerçekçi bir aralık olarak gösterilir.</p>
+      </details>
+      <details>
+        <summary>Elektrikli araçlar için de çalışıyor mu?</summary>
+        <p>Evet, haritada EPDK'daki halka açık şarj istasyonlarını soket türü ve gücüyle görebilirsin. Tarifeler işletmecinin kendi sitesinden alınır ve kaynağıyla birlikte gösterilir.</p>
+      </details>
+      <details>
+        <summary>Konum verilerim ne oluyor?</summary>
+        <p>Konumun yalnızca harita ve navigasyon için kullanılır. Yolculuk kaydı paylaşımı varsayılan olarak kapalıdır ve yalnızca sen açarsan, şifreli bağlantıyla gönderilir. Hesabını ve verilerini istediğin an silebilirsin. Ayrıntılar <a href="/gizlilik">gizlilik metninde</a>.</p>
+      </details>
+      <details>
+        <summary>iPhone sürümü var mı?</summary>
+        <p>İlk sürüm Android için hazırlanıyor. iOS sürümü sonraki adımda planlanıyor.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="indir">
+  <div class="wrap">
+    <div class="cta rv">
+      <img src="assets/akaryol-logo.png" alt="Akaryol logosu">
+      <p>Bir sonraki yolculuğunda yakıtı düşünme. Akaryol çok yakında Google Play'de.</p>
+      <a class="btn btn-primary" href="#indir">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.2c-.3.3-.4.7-.4 1.2v17.2c0 .5.1.9.4 1.2l9.6-9.8-9.6-9.8zm10.7 10.9 2.6 2.6-11 6.3 8.4-8.9zm3.8-3.8 2.9 1.7c.8.5.8 1.6 0 2.1l-2.9 1.7-2.8-2.8 2.8-2.7zM5.9 2l11 6.3-2.6 2.6L5.9 2z"/></svg>
+        Yakında Google Play'de
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#">
+      <img class="mark" src="assets/akaryol-isaret.png" alt="">
+      <img class="word" src="assets/akaryol-yazi.png" alt="Akaryol">
+    </a>
+    <nav>
+      <a href="#ozellikler">Özellikler</a>
+      <a href="#sss">SSS</a>
+      <a href="/gizlilik">Gizlilik ve KVKK</a>
+      <a href="/hesap-silme">Hesap silme</a>
+      <!-- TODO: iletişim e-postası belli olunca ekle: <a href="mailto:...">İletişim</a> -->
+    </nav>
+    <div class="attr">© 2026 Akaryol. Fiyat, istasyon ve şarj verileri: EPDK. Harita verisi: © OpenStreetMap katkıcıları (ODbL). Trafik: TomTom.</div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var els = document.querySelectorAll('.rv');
+    if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold: .12 });
+    els.forEach(function (e) { io.observe(e); });
+  })();
+</script>
+</body>
+</html>
